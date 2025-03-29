@@ -14,34 +14,38 @@ This React-based interface connects with the [Narratopia Backend](https://github
 ```bash
 git clone https://github.com/Adelaice7/narratopia-frontend.git
 cd narratopia-frontend
-2. Install Dependencies
-bash
-Copy
-Edit
+```
+
+### 2. Install Dependencies
+
+```bash
 npm install
-3. Run the Development Server
-For Vite:
+```
 
-bash
-Copy
-Edit
+###  3. Run the Development Server
+
+#### For Vite:
+
+```bash
 npm run dev
-For Create React App:
+```
 
-bash
-Copy
-Edit
+#### For Create React App:
+
+```bash
 npm start
+```bash
+
 App should be running at: http://localhost:3000
 
-Environment Variables
+## Environment Variables
 Create a .env file in the root of the project with the following:
 
 env
-Copy
-Edit
+
 VITE_API_BASE_URL=http://localhost:5000/api
 Adjust based on your backend port or deployed API URL.
+```bash
 
 ## Tech Stack
 - ⚛️ React
