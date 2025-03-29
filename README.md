@@ -68,7 +68,7 @@ Adjust based on your backend port or deployed API URL.
 Coming soon 👀
 
 ## Related Repositories
-Narratopia Backend
+[Narratopia Backend](https://github.com/Adelaice7/narratopia-backend)
 
 
 **“Write the story only you can tell. We’ll help you build the world it lives in.”** — *Narratopia*
