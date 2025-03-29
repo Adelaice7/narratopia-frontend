@@ -34,18 +34,18 @@ npm run dev
 
 ```bash
 npm start
-```bash
+```
 
 App should be running at: http://localhost:3000
 
 ## Environment Variables
 Create a .env file in the root of the project with the following:
 
-env
-
-VITE_API_BASE_URL=http://localhost:5000/api
-Adjust based on your backend port or deployed API URL.
 ```bash
+VITE_API_BASE_URL=http://localhost:5000/api
+```
+
+Adjust based on your backend port or deployed API URL.
 
 ## Tech Stack
 - ⚛️ React
@@ -66,11 +66,11 @@ Adjust based on your backend port or deployed API URL.
 - 🎯 Distraction-free writing interface
 - 🧠 Planned AI integration for writing, suggestions, and worldbuilding
 
-- Screenshots
+## Screenshots
 Coming soon 👀
 
-- Related Repositories
+## Related Repositories
 Narratopia Backend
 
 
-“Write the story only you can tell. We’ll help you build the world it lives in.” — Narratopia
+**“Write the story only you can tell. We’ll help you build the world it lives in.”** — *Narratopia*
