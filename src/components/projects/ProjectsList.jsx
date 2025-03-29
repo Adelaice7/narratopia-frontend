@@ -1,553 +1,588 @@
-// WritingInterface.jsx - Cleaned up version
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  Box, Paper, Typography, IconButton, 
-  Drawer, List, ListItem, ListItemText, Divider, 
-  AppBar, Toolbar, Menu, MenuItem,
-  Tooltip, Button, Dialog, DialogTitle, DialogContent,
-  DialogActions, TextField, FormControl,
-  InputLabel, Select, ListItemIcon, ListItemButton
+  Container, Box, Paper, Typography, Button, Grid, 
+  Card, CardContent, CardActionArea, Divider, 
+  IconButton, Dialog, DialogTitle, DialogContent, 
+  DialogActions, TextField, CircularProgress,
+  FormControl, InputLabel, Select, MenuItem,
+  Chip, Menu, ListItemIcon, ListItemText
 } from '@mui/material';
-
 import {
-  MenuBook as MenuBookIcon,
-  ExpandMore as ExpandMoreIcon,
   Add as AddIcon,
-  FormatBold as FormatBoldIcon,
-  FormatItalic as FormatItalicIcon,
-  FormatUnderlined as FormatUnderlinedIcon,
-  FormatQuote as FormatQuoteIcon,
-  InsertPhoto as InsertPhotoIcon,
-  Save as SaveIcon,
-  History as HistoryIcon,
-  Settings as SettingsIcon,
-  Fullscreen as FullscreenIcon,
-  ImportExport as ImportExportIcon,
-  Description
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+  MoreVert as MoreVertIcon,
+  Bookmark as BookmarkIcon,
+  Archive as ArchiveIcon,
+  Sort as SortIcon,
+  FilterList as FilterListIcon
 } from '@mui/icons-material';
-
-// Rich text editor component import
-import { Editor, EditorState, RichUtils, convertFromRaw, convertToRaw } from 'draft-js';
-import 'draft-js/dist/Draft.css';
-import { useParams } from 'react-router-dom';
-import api from '../../utils/api';
+import { useNavigate } from 'react-router-dom';
 import { useAlert } from '../../contexts/AlertContext';
+import api from '../../utils/api';
 
-const WritingInterface = () => {
-  const { projectId, chapterId } = useParams();
+const ProjectsList = () => {
+  const navigate = useNavigate();
   const { setAlert } = useAlert();
   
-  // State management
-  const [editorState, setEditorState] = useState(EditorState.createEmpty());
-  const [isProjectDrawerOpen, setIsProjectDrawerOpen] = useState(true);
-  const [isCodexDrawerOpen, setIsCodexDrawerOpen] = useState(false);
-  const [currentProject, setCurrentProject] = useState(null);
-  const [currentChapter, setCurrentChapter] = useState(null);
-  const [chapters, setChapters] = useState([]);
-  const [wordCount, setWordCount] = useState(0);
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [dialogType, setDialogType] = useState('');
-  const [newChapterTitle, setNewChapterTitle] = useState('');
   const [loading, setLoading] = useState(true);
-  const [autoSaving, setAutoSaving] = useState(false);
+  const [projects, setProjects] = useState([]);
+  const [filteredProjects, setFilteredProjects] = useState([]);
   
-  const editorRef = useRef(null);
-
-  // Load project and chapter data
+  // Create project dialog
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [newProject, setNewProject] = useState({
+    title: '',
+    description: '',
+    genre: '',
+    wordCountGoal: 50000
+  });
+  
+  // Edit project dialog
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editProject, setEditProject] = useState(null);
+  
+  // Delete confirmation
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
+  
+  // Action menu
+  const [actionMenuAnchor, setActionMenuAnchor] = useState(null);
+  const [actionMenuProject, setActionMenuProject] = useState(null);
+  
+  // Filters and sorting
+  const [filterValue, setFilterValue] = useState('all');
+  const [sortValue, setSortValue] = useState('updated');
+  
+  // Fetch projects on load
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // Fetch project details
-        const projectRes = await api.get(`/api/projects/${projectId}`);
-        setCurrentProject(projectRes.data.data);
-        
-        // Fetch chapters list
-        const chaptersRes = await api.get(`/api/projects/${projectId}/chapters`);
-        setChapters(chaptersRes.data.data);
-        
-        // Fetch current chapter
-        if (chapterId) {
-          const chapterRes = await api.get(`/api/chapters/${chapterId}`);
-          const chapterData = chapterRes.data.data;
-          setCurrentChapter(chapterData);
-          
-          // Initialize editor with content if available
-          if (chapterData.content) {
-            const contentState = convertFromRaw(
-              typeof chapterData.content === 'string' 
-                ? JSON.parse(chapterData.content) 
-                : chapterData.content
-            );
-            setEditorState(EditorState.createWithContent(contentState));
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        setAlert('Failed to load chapter data', 'error');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchData();
-  }, [projectId, chapterId, setAlert]);
-
-  // Calculate word count
+    fetchProjects();
+  }, []);
+  
+  // Apply filters and sorting when projects or filter/sort values change
   useEffect(() => {
-    const contentState = editorState.getCurrentContent();
-    const rawText = contentState.getPlainText('');
-    const wordArray = rawText.match(/\S+/g) || [];
-    setWordCount(wordArray.length);
-  }, [editorState]);
+    applyFiltersAndSort();
+  }, [projects, filterValue, sortValue]);
   
-  // Auto-save functionality
-  useEffect(() => {
-    if (currentChapter && !loading) {
-      const autoSaveInterval = setTimeout(() => {
-        handleSave(true);
-      }, 30000); // 30 seconds
-      
-      return () => clearTimeout(autoSaveInterval);
-    }
-  }, [editorState, currentChapter, loading]);
-
-  // Handle editor changes
-  const handleEditorChange = (newState) => {
-    setEditorState(newState);
-  };
-
-  // Handle keyboard shortcuts
-  const handleKeyCommand = (command, state) => {
-    const newState = RichUtils.handleKeyCommand(state, command);
-    if (newState) {
-      handleEditorChange(newState);
-      return 'handled';
-    }
-    return 'not-handled';
-  };
-
-  // Handle text formatting
-  const handleFormatClick = (style) => {
-    setEditorState(RichUtils.toggleInlineStyle(editorState, style));
-  };
-
-  // Handle menu open/close
-  const handleMenuClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-  
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  // Handle dialog open
-  const handleDialogOpen = (type) => {
-    setDialogType(type);
-    setIsDialogOpen(true);
-  };
-  
-  // Handle save
-  const handleSave = async (isAutoSave = false) => {
-    if (!currentChapter) return;
-    
+  // Fetch projects from API
+  const fetchProjects = async () => {
+    setLoading(true);
     try {
-      if (isAutoSave) setAutoSaving(true);
-      
-      const contentState = editorState.getCurrentContent();
-      const contentRaw = JSON.stringify(convertToRaw(contentState));
-      
-      await api.put(`/api/chapters/${currentChapter._id}`, {
-        content: contentRaw,
-        wordCount: wordCount
-      });
-      
-      if (!isAutoSave) {
-        setAlert('Chapter saved successfully', 'success');
-      }
+      const response = await api.get('/api/projects');
+      setProjects(response.data.data);
     } catch (error) {
-      console.error('Error saving chapter:', error);
-      if (!isAutoSave) {
-        setAlert('Failed to save chapter', 'error');
-      }
+      console.error('Error fetching projects:', error);
+      setAlert('Failed to load projects', 'error');
     } finally {
-      if (isAutoSave) setAutoSaving(false);
+      setLoading(false);
     }
   };
-
-  // Handle chapter selection
-  const handleChapterSelect = (chapterId) => {
-    window.location.href = `/editor/${projectId}/${chapterId}`;
+  
+  // Apply filters and sorting to projects
+  const applyFiltersAndSort = () => {
+    let result = [...projects];
+    
+    // Apply filter
+    if (filterValue === 'archived') {
+      result = result.filter(project => project.isArchived);
+    } else if (filterValue === 'active') {
+      result = result.filter(project => !project.isArchived);
+    }
+    
+    // Apply sorting
+    if (sortValue === 'updated') {
+      result.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    } else if (sortValue === 'created') {
+      result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    } else if (sortValue === 'title') {
+      result.sort((a, b) => a.title.localeCompare(b.title));
+    }
+    
+    setFilteredProjects(result);
   };
   
-  // Create new chapter
-  const handleCreateChapter = async () => {
-    if (!newChapterTitle.trim()) {
-      setAlert('Please enter a chapter title', 'error');
+  // Open project detail
+  const handleOpenProject = (projectId) => {
+    navigate(`/projects/${projectId}`);
+  };
+  
+  // Create new project
+  const handleCreateProject = async () => {
+    if (!newProject.title.trim()) {
+      setAlert('Project title is required', 'error');
       return;
     }
     
     try {
-      const response = await api.post(`/api/projects/${projectId}/chapters`, {
-        title: newChapterTitle.trim()
+      const response = await api.post('/api/projects', newProject);
+      setProjects([...projects, response.data.data]);
+      setCreateDialogOpen(false);
+      setNewProject({
+        title: '',
+        description: '',
+        genre: '',
+        wordCountGoal: 50000
       });
+      setAlert('Project created successfully', 'success');
       
-      const newChapter = response.data.data;
-      setChapters([...chapters, newChapter]);
-      setIsDialogOpen(false);
-      setNewChapterTitle('');
-      setAlert('Chapter created successfully', 'success');
-      
-      // Navigate to new chapter
-      window.location.href = `/editor/${projectId}/${newChapter._id}`;
+      // Navigate to the new project
+      navigate(`/projects/${response.data.data._id}`);
     } catch (error) {
-      console.error('Error creating chapter:', error);
-      setAlert('Failed to create chapter', 'error');
+      console.error('Error creating project:', error);
+      setAlert('Failed to create project', 'error');
     }
   };
-
-  // Focus the editor when clicking on the writing area
-  const focusEditor = () => {
-    if (editorRef.current) {
-      editorRef.current.focus();
+  
+  // Update a project
+  const handleUpdateProject = async () => {
+    if (!editProject?.title.trim()) {
+      setAlert('Project title is required', 'error');
+      return;
+    }
+    
+    try {
+      const response = await api.put(`/api/projects/${editProject._id}`, editProject);
+      
+      // Update projects list
+      setProjects(projects.map(p => 
+        p._id === editProject._id ? response.data.data : p
+      ));
+      
+      setEditDialogOpen(false);
+      setEditProject(null);
+      setAlert('Project updated successfully', 'success');
+    } catch (error) {
+      console.error('Error updating project:', error);
+      setAlert('Failed to update project', 'error');
     }
   };
-
+  
+  // Delete a project
+  const handleDeleteProject = async () => {
+    try {
+      await api.delete(`/api/projects/${selectedProject._id}`);
+      
+      // Update projects list
+      setProjects(projects.filter(p => p._id !== selectedProject._id));
+      
+      setDeleteDialogOpen(false);
+      setSelectedProject(null);
+      setAlert('Project deleted successfully', 'success');
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      setAlert('Failed to delete project', 'error');
+    }
+  };
+  
+  // Toggle project archived status
+  const handleToggleArchive = async () => {
+    try {
+      const project = actionMenuProject;
+      const updatedProject = {
+        ...project,
+        isArchived: !project.isArchived
+      };
+      
+      const response = await api.put(`/api/projects/${project._id}`, updatedProject);
+      
+      // Update projects list
+      setProjects(projects.map(p => 
+        p._id === project._id ? response.data.data : p
+      ));
+      
+      setActionMenuAnchor(null);
+      setActionMenuProject(null);
+      setAlert(`Project ${updatedProject.isArchived ? 'archived' : 'unarchived'} successfully`, 'success');
+    } catch (error) {
+      console.error('Error updating project:', error);
+      setAlert('Failed to update project', 'error');
+    }
+  };
+  
+  // Format date
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString(undefined, { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+  
   return (
-    <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-      {/* Top Navigation */}
-      <AppBar position="fixed" color="default" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
-        <Toolbar>
-          <IconButton 
-            edge="start" 
-            color="inherit"
-            onClick={() => setIsProjectDrawerOpen(!isProjectDrawerOpen)}
+    <Container maxWidth="lg" sx={{ py: 4, pl: { sm: 0, md: '240px' } }}>
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h4">My Projects</Typography>
+          
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setCreateDialogOpen(true)}
           >
-            <MenuBookIcon />
-          </IconButton>
+            New Project
+          </Button>
+        </Box>
+        
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+          <FormControl variant="outlined" size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Filter</InputLabel>
+            <Select
+              value={filterValue}
+              onChange={(e) => setFilterValue(e.target.value)}
+              label="Filter"
+            >
+              <MenuItem value="all">All Projects</MenuItem>
+              <MenuItem value="active">Active</MenuItem>
+              <MenuItem value="archived">Archived</MenuItem>
+            </Select>
+          </FormControl>
           
-          <Typography variant="h6" noWrap sx={{ flexGrow: 1, ml: 2 }}>
-            {currentProject?.title} - {currentChapter?.title}
-          </Typography>
-          
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography variant="body2" sx={{ mr: 3 }}>
-              {wordCount} / {currentProject?.wordCountGoal} words
+          <FormControl variant="outlined" size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Sort By</InputLabel>
+            <Select
+              value={sortValue}
+              onChange={(e) => setSortValue(e.target.value)}
+              label="Sort By"
+            >
+              <MenuItem value="updated">Last Updated</MenuItem>
+              <MenuItem value="created">Date Created</MenuItem>
+              <MenuItem value="title">Title</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+        
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : filteredProjects.length === 0 ? (
+          <Paper 
+            variant="outlined" 
+            sx={{ 
+              p: 4, 
+              textAlign: 'center',
+              backgroundColor: 'background.default'
+            }}
+          >
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              {projects.length === 0
+                ? "You don't have any projects yet"
+                : "No projects match your current filters"}
             </Typography>
             
-            <Tooltip title={autoSaving ? "Auto-saving..." : "Save"}>
-              <IconButton color="inherit" onClick={() => handleSave()}>
-                <SaveIcon />
-              </IconButton>
-            </Tooltip>
-            
-            <Tooltip title="Version History">
-              <IconButton color="inherit">
-                <HistoryIcon />
-              </IconButton>
-            </Tooltip>
-            
-            <Tooltip title="Export">
-              <IconButton 
-                color="inherit"
-                onClick={handleMenuClick}
-              >
-                <ImportExportIcon />
-              </IconButton>
-            </Tooltip>
-            
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleMenuClose}
-            >
-              <MenuItem onClick={handleMenuClose}>Export as DOCX</MenuItem>
-              <MenuItem onClick={handleMenuClose}>Export as PDF</MenuItem>
-              <MenuItem onClick={handleMenuClose}>Export as EPUB</MenuItem>
-            </Menu>
-            
-            <Tooltip title="Settings">
-              <IconButton color="inherit">
-                <SettingsIcon />
-              </IconButton>
-            </Tooltip>
-            
-            <Tooltip title="Full Screen">
-              <IconButton color="inherit">
-                <FullscreenIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Toolbar>
-      </AppBar>
+            {projects.length === 0 && (
+              <>
+                <Typography variant="body1" color="text.secondary" paragraph>
+                  Start your writing journey by creating your first project
+                </Typography>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => setCreateDialogOpen(true)}
+                  sx={{ mt: 2 }}
+                >
+                  Create First Project
+                </Button>
+              </>
+            )}
+          </Paper>
+        ) : (
+          <Grid container spacing={3}>
+            {filteredProjects.map(project => (
+              <Grid item xs={12} sm={6} md={4} key={project._id}>
+                <Card 
+                  sx={{ 
+                    height: '100%',
+                    position: 'relative',
+                    opacity: project.isArchived ? 0.8 : 1,
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: 4
+                    }
+                  }}
+                >
+                  <IconButton
+                    sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActionMenuAnchor(e.currentTarget);
+                      setActionMenuProject(project);
+                    }}
+                  >
+                    <MoreVertIcon />
+                  </IconButton>
+                  
+                  {project.isArchived && (
+                    <Chip 
+                      label="Archived"
+                      size="small"
+                      sx={{ 
+                        position: 'absolute', 
+                        top: 8, 
+                        left: 8, 
+                        zIndex: 1,
+                        backgroundColor: 'rgba(0,0,0,0.5)',
+                        color: 'white'
+                      }}
+                    />
+                  )}
+                  
+                  <CardActionArea 
+                    sx={{ height: '100%' }}
+                    onClick={() => handleOpenProject(project._id)}
+                  >
+                    <CardContent>
+                      <Typography variant="h6" component="div" gutterBottom>
+                        {project.title}
+                      </Typography>
+                      
+                      {project.genre && (
+                        <Chip 
+                          label={project.genre} 
+                          size="small" 
+                          variant="outlined" 
+                          sx={{ mb: 2 }} 
+                        />
+                      )}
+                      
+                      <Typography 
+                        variant="body2" 
+                        color="text.secondary"
+                        sx={{ 
+                          mb: 2, 
+                          height: 60, 
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: 'vertical'
+                        }}
+                      >
+                        {project.description || 'No description provided.'}
+                      </Typography>
+                      
+                      <Divider sx={{ my: 1 }} />
+                      
+                      <Typography variant="caption" color="text.secondary" display="block">
+                        Created: {formatDate(project.createdAt)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" display="block">
+                        Last updated: {formatDate(project.updatedAt)}
+                      </Typography>
+                    </CardContent>
+                  </CardActionArea>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        )}
+      </Paper>
       
-      {/* Project Structure Drawer */}
-      <Drawer
-        variant="persistent"
-        anchor="left"
-        open={isProjectDrawerOpen}
-        sx={{
-          width: 280,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: 280,
-            boxSizing: 'border-box',
-            top: 64,
-            height: 'calc(100% - 64px)'
-          },
-        }}
+      {/* Create Project Dialog */}
+      <Dialog 
+        open={createDialogOpen} 
+        onClose={() => setCreateDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
       >
-        <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6">Project Structure</Typography>
-          <IconButton size="small" onClick={() => handleDialogOpen('chapter')}>
-            <AddIcon />
-          </IconButton>
-        </Box>
-        
-        <Divider />
-        
-        <List>
-          {chapters.map((chapter) => (
-            <ListItem 
-              key={chapter._id}
-              disablePadding
-              sx={{
-                bgcolor: currentChapter?._id === chapter._id ? 'action.selected' : 'transparent'
-              }}
-            >
-              <ListItemButton onClick={() => handleChapterSelect(chapter._id)}>
-                <ListItemIcon>
-                  <Description />
-                </ListItemIcon>
-                <ListItemText 
-                  primary={chapter.title} 
-                  secondary={`${chapter.wordCount} words`}
-                />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
-      </Drawer>
-      
-      {/* Writing Area */}
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 3,
-          mt: 8,
-          overflowY: 'auto',
-          backgroundColor: '#f8f9fa',
-          transition: 'margin 0.2s ease-in-out',
-          ml: isProjectDrawerOpen ? '280px' : 0,
-          mr: isCodexDrawerOpen ? '320px' : 0
-        }}
-      >
-        {/* Formatting Toolbar */}
-        <Paper 
-          elevation={1} 
-          sx={{ 
-            p: 1, 
-            mb: 3, 
-            display: 'flex', 
-            alignItems: 'center',
-            position: 'sticky',
-            top: 0,
-            zIndex: 10
-          }}
-        >
-          <Typography variant="h6" sx={{ mr: 3 }}>
-            {currentChapter?.title}
-          </Typography>
-          
-          <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-          
-          <Tooltip title="Bold">
-            <IconButton onClick={() => handleFormatClick('BOLD')}>
-              <FormatBoldIcon />
-            </IconButton>
-          </Tooltip>
-          
-          <Tooltip title="Italic">
-            <IconButton onClick={() => handleFormatClick('ITALIC')}>
-              <FormatItalicIcon />
-            </IconButton>
-          </Tooltip>
-          
-          <Tooltip title="Underline">
-            <IconButton onClick={() => handleFormatClick('UNDERLINE')}>
-              <FormatUnderlinedIcon />
-            </IconButton>
-          </Tooltip>
-          
-          <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-          
-          <Tooltip title="Quote">
-            <IconButton>
-              <FormatQuoteIcon />
-            </IconButton>
-          </Tooltip>
-          
-          <Tooltip title="Insert Image">
-            <IconButton>
-              <InsertPhotoIcon />
-            </IconButton>
-          </Tooltip>
-          
-          <Box sx={{ flexGrow: 1 }} />
-          
-          <Button 
-            variant="outlined" 
-            endIcon={<ExpandMoreIcon />}
-            onClick={() => setIsCodexDrawerOpen(!isCodexDrawerOpen)}
-          >
-            Codex
-          </Button>
-        </Paper>
-        
-        {/* Editor */}
-        <Paper 
-          elevation={2}
-          onClick={focusEditor}
-          sx={{ 
-            p: 4, 
-            minHeight: 'calc(100vh - 200px)',
-            maxWidth: 800,
-            mx: 'auto',
-            backgroundColor: 'white'
-          }}
-        >
-          <Box sx={{ fontSize: '1.1rem', lineHeight: 1.8 }}>
-            <Editor
-              ref={editorRef}
-              editorState={editorState}
-              onChange={handleEditorChange}
-              handleKeyCommand={handleKeyCommand}
-              placeholder="Start writing..."
-            />
-          </Box>
-        </Paper>
-      </Box>
-      
-      {/* Codex Reference Drawer */}
-      <Drawer
-        variant="persistent"
-        anchor="right"
-        open={isCodexDrawerOpen}
-        sx={{
-          width: 320,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: 320,
-            boxSizing: 'border-box',
-            top: 64,
-            height: 'calc(100% - 64px)'
-          },
-        }}
-      >
-        <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6">Codex Reference</Typography>
-          <IconButton size="small" onClick={() => setIsCodexDrawerOpen(false)}>
-            <ImportExportIcon />
-          </IconButton>
-        </Box>
-        
-        <Divider />
-        
-        <Box p={2}>
-          <TextField
-            placeholder="Search codex..."
-            size="small"
-            variant="outlined"
-            fullWidth
-            sx={{ mb: 2 }}
-          />
-          
-          <Typography variant="subtitle1" gutterBottom>
-            Characters
-          </Typography>
-          <List dense>
-            <ListItem disablePadding>
-              <ListItemButton>
-                <ListItemText primary="Eleanor Blackwood" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton>
-                <ListItemText primary="Marcus Rivera" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton>
-                <ListItemText primary="Violet Chen" />
-              </ListItemButton>
-            </ListItem>
-          </List>
-          
-          <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
-            Locations
-          </Typography>
-          <List dense>
-            <ListItem disablePadding>
-              <ListItemButton>
-                <ListItemText primary="Ravenwood City" />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton>
-                <ListItemText primary="Blackwood Manor" />
-              </ListItemButton>
-            </ListItem>
-          </List>
-        </Box>
-      </Drawer>
-      
-      {/* Dialogs */}
-      <Dialog open={isDialogOpen} onClose={() => setIsDialogOpen(false)}>
-        <DialogTitle>
-          {dialogType === 'chapter' ? 'Add New Chapter' : 'Add New Scene'}
-        </DialogTitle>
+        <DialogTitle>Create New Project</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
             margin="dense"
-            label="Title"
+            label="Project Title"
             fullWidth
-            variant="outlined"
-            value={newChapterTitle}
-            onChange={(e) => setNewChapterTitle(e.target.value)}
+            required
+            value={newProject.title}
+            onChange={(e) => setNewProject({...newProject, title: e.target.value})}
+            sx={{ mb: 2, mt: 1 }}
+          />
+          
+          <TextField
+            margin="dense"
+            label="Description"
+            fullWidth
+            multiline
+            rows={3}
+            value={newProject.description}
+            onChange={(e) => setNewProject({...newProject, description: e.target.value})}
             sx={{ mb: 2 }}
           />
-          {dialogType === 'scene' && (
-            <FormControl fullWidth variant="outlined">
-              <InputLabel>Chapter</InputLabel>
-              <Select
-                label="Chapter"
-                value=""
-              >
-                {chapters.map(chapter => (
-                  <MenuItem key={chapter._id} value={chapter._id}>
-                    {chapter.title}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          )}
+          
+          <TextField
+            margin="dense"
+            label="Genre"
+            fullWidth
+            value={newProject.genre}
+            onChange={(e) => setNewProject({...newProject, genre: e.target.value})}
+            sx={{ mb: 2 }}
+          />
+          
+          <TextField
+            margin="dense"
+            label="Word Count Goal"
+            type="number"
+            fullWidth
+            value={newProject.wordCountGoal}
+            onChange={(e) => setNewProject({...newProject, wordCountGoal: parseInt(e.target.value) || 0})}
+            sx={{ mb: 2 }}
+          />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
           <Button 
-            variant="contained" 
-            color="primary"
-            onClick={handleCreateChapter}
+            onClick={handleCreateProject} 
+            variant="contained"
+            disabled={!newProject.title.trim()}
           >
             Create
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+      
+      {/* Edit Project Dialog */}
+      <Dialog 
+        open={editDialogOpen} 
+        onClose={() => setEditDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Edit Project</DialogTitle>
+        <DialogContent>
+          {editProject && (
+            <>
+              <TextField
+                autoFocus
+                margin="dense"
+                label="Project Title"
+                fullWidth
+                required
+                value={editProject.title}
+                onChange={(e) => setEditProject({...editProject, title: e.target.value})}
+                sx={{ mb: 2, mt: 1 }}
+              />
+              
+              <TextField
+                margin="dense"
+                label="Description"
+                fullWidth
+                multiline
+                rows={3}
+                value={editProject.description || ''}
+                onChange={(e) => setEditProject({...editProject, description: e.target.value})}
+                sx={{ mb: 2 }}
+              />
+              
+              <TextField
+                margin="dense"
+                label="Genre"
+                fullWidth
+                value={editProject.genre || ''}
+                onChange={(e) => setEditProject({...editProject, genre: e.target.value})}
+                sx={{ mb: 2 }}
+              />
+              
+              <TextField
+                margin="dense"
+                label="Word Count Goal"
+                type="number"
+                fullWidth
+                value={editProject.wordCountGoal || 50000}
+                onChange={(e) => setEditProject({...editProject, wordCountGoal: parseInt(e.target.value) || 0})}
+                sx={{ mb: 2 }}
+              />
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleUpdateProject} 
+            variant="contained"
+            disabled={!editProject?.title?.trim()}
+          >
+            Save Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1">
+            Are you sure you want to delete "{selectedProject?.title}"?
+          </Typography>
+          <Typography variant="body2" color="error" sx={{ mt: 2 }}>
+            This action cannot be undone. All chapters, codex entries, and other associated data will be permanently deleted.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleDeleteProject} 
+            color="error"
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* Action Menu */}
+      <Menu
+        anchorEl={actionMenuAnchor}
+        open={Boolean(actionMenuAnchor)}
+        onClose={() => {
+          setActionMenuAnchor(null);
+          setActionMenuProject(null);
+        }}
+      >
+        <MenuItem
+          onClick={() => {
+            setEditProject(actionMenuProject);
+            setEditDialogOpen(true);
+            setActionMenuAnchor(null);
+            setActionMenuProject(null);
+          }}
+        >
+          <ListItemIcon>
+            <EditIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Edit</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleToggleArchive}>
+          <ListItemIcon>
+            {actionMenuProject?.isArchived ? (
+              <BookmarkIcon fontSize="small" />
+            ) : (
+              <ArchiveIcon fontSize="small" />
+            )}
+          </ListItemIcon>
+          <ListItemText>
+            {actionMenuProject?.isArchived ? 'Unarchive' : 'Archive'}
+          </ListItemText>
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            setSelectedProject(actionMenuProject);
+            setDeleteDialogOpen(true);
+            setActionMenuAnchor(null);
+            setActionMenuProject(null);
+          }}
+        >
+          <ListItemIcon>
+            <DeleteIcon fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText sx={{ color: 'error.main' }}>Delete</ListItemText>
+        </MenuItem>
+      </Menu>
+    </Container>
   );
 };
 
-export default WritingInterface;
+export default ProjectsList;
