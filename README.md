@@ -1,6 +1,4 @@
-# Narratopia — Frontend
-
-## IN PROGRESS
+# Narratopia — Frontend - *IN PROGRESS*
 
 **Narratopia**, the frontend for a modern, sleek, AI-friendly writing platform built for authors, worldbuilders, and storytellers.
 This React-based interface connects with the [Narratopia Backend](https://github.com/Adelaice7/narratopia-backend) to help you manage characters, lore, chapters, and your creative soul.
