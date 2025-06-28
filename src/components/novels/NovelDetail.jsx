@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Container, Box, Paper, Typography, Button, Grid, 
-  LinearProgress, Divider, List, ListItem, ListItemText, 
+  Divider, List, ListItem, ListItemText, 
   ListItemSecondaryAction, IconButton, Card, CardContent,
   CircularProgress, Tabs, Tab, Dialog, DialogTitle,
   DialogContent, DialogActions, TextField, Chip, Menu,
@@ -11,7 +11,6 @@ import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  MoreVert as MoreVertIcon,
   MoreHoriz as MoreHorizIcon,
   MenuBook as MenuBookIcon,
   Create as CreateIcon,
@@ -38,18 +37,17 @@ const formatDate = (dateString) => {
   });
 };
 
-const ProjectDetail = () => {
-  const { projectId } = useParams();
+const NovelDetail = () => {
+  const { novelId } = useParams();
   const navigate = useNavigate();
   const { setAlert } = useAlert();
   
   const [loading, setLoading] = useState(true);
-  const [project, setProject] = useState(null);
+  const [novel, setNovel] = useState(null);
   const [stats, setStats] = useState({
     totalWordCount: 0,
     chapterCount: 0,
-    codexCounts: {},
-    progressPercentage: 0
+    codexCounts: {}
   });
   const [chapters, setChapters] = useState([]);
   const [codexEntities, setCodexEntities] = useState([]);
@@ -74,8 +72,8 @@ const ProjectDetail = () => {
   // Ref to prevent re-fetching during deletion
   const isDeletingRef = useRef(false);
   
-  // Load project data
-  const fetchProjectData = useCallback(async () => {
+  // Load novel data
+  const fetchNovelData = useCallback(async () => {
     // Don't fetch if we're currently deleting
     if (isDeletingRef.current) {
       return;
@@ -83,32 +81,32 @@ const ProjectDetail = () => {
     
     setLoading(true);
     try {
-      // Fetch project details
-      const projectRes = await api.get(`/api/projects/${projectId}`);
-      setProject(projectRes.data.data);
+      // Fetch novel details
+      const novelRes = await api.get(`/api/novels/${novelId}`);
+      setNovel(novelRes.data.data);
       
-      // Fetch project stats
-      const statsRes = await api.get(`/api/projects/${projectId}/stats`);
+      // Fetch novel stats
+      const statsRes = await api.get(`/api/novels/${novelId}/stats`);
       setStats(statsRes.data.data);
       
       // Fetch chapters
-      const chaptersRes = await api.get(`/api/projects/${projectId}/chapters`);
+      const chaptersRes = await api.get(`/api/novels/${novelId}/chapters`);
       setChapters(chaptersRes.data.data);
       
       // Fetch codex entities
-      const codexRes = await api.get(`/api/projects/${projectId}/codex`);
+      const codexRes = await api.get(`/api/novels/${novelId}/codex`);
       setCodexEntities(codexRes.data.data);
     } catch (error) {
-      console.error('Error fetching project data:', error);
-      setAlert('Failed to load project data', 'error');
+      console.error('Error fetching novel data:', error);
+      setAlert('Failed to load novel data', 'error');
     } finally {
       setLoading(false);
     }
-  }, [projectId, setAlert]);
+  }, [novelId, setAlert]);
 
   useEffect(() => {
-    fetchProjectData();
-  }, [fetchProjectData]);
+    fetchNovelData();
+  }, [fetchNovelData]);
   
   // Handle tab change
   const handleTabChange = (event, newValue) => {
@@ -134,7 +132,7 @@ const ProjectDetail = () => {
     }
     
     try {
-      const response = await api.post(`/api/projects/${projectId}/chapters`, {
+      const response = await api.post(`/api/novels/${novelId}/chapters`, {
         title: newChapterTitle.trim()
       });
       
@@ -150,7 +148,7 @@ const ProjectDetail = () => {
   
   // Open editor for a chapter
   const handleOpenEditor = (chapterId) => {
-    navigate(`/editor/${projectId}/${chapterId}`);
+    navigate(`/editor/${novelId}/${chapterId}`);
   };
   
   // Edit chapter title
@@ -244,12 +242,12 @@ const ProjectDetail = () => {
   
   // Navigate to codex manager
   const handleOpenCodex = () => {
-    navigate(`/codex/${projectId}`);
+    navigate(`/codex/${novelId}`);
   };
   
   // Navigate to entity detail
   const handleOpenEntity = (entityId) => {
-    navigate(`/codex/${projectId}/entity/${entityId}`);
+    navigate(`/codex/${novelId}/entity/${entityId}`);
   };
   
   // Get icon for entity type
@@ -278,7 +276,7 @@ const ProjectDetail = () => {
     }
     
     try {
-      const response = await api.post(`/api/projects/${projectId}/codex`, {
+      const response = await api.post(`/api/novels/${novelId}/codex`, {
         type: newEntityType,
         name: name.trim()
       });
@@ -340,11 +338,11 @@ const ProjectDetail = () => {
     );
   }
   
-  if (!project) {
+  if (!novel) {
     return (
       <Container>
         <Paper sx={{ p: 3, my: 3 }}>
-          <Typography variant="h5" color="error">Project not found</Typography>
+          <Typography variant="h5" color="error">Novel not found</Typography>
         </Paper>
       </Container>
     );
@@ -352,23 +350,23 @@ const ProjectDetail = () => {
   
   return (
     <Container maxWidth="lg" sx={{ py: 4, pl: { sm: 0, md: '240px' } }}>
-      {/* Project Header */}
+      {/* Novel Header */}
       <Paper sx={{ p: 3, mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
               <IconButton 
-                onClick={() => navigate('/projects')}
+                onClick={() => navigate('/novels')}
                 sx={{ mr: 1 }}
               >
                 <ArrowBackIcon />
               </IconButton>
-              <Typography variant="h4">{project.title}</Typography>
+              <Typography variant="h4">{novel.title}</Typography>
             </Box>
             
-            {project.genre && (
+            {novel.genre && (
               <Chip 
-                label={project.genre} 
+                label={novel.genre} 
                 variant="outlined" 
                 sx={{ ml: 6 }} 
               />
@@ -378,44 +376,44 @@ const ProjectDetail = () => {
           <Button
             variant="outlined"
             startIcon={<EditIcon />}
-            onClick={() => {/* TODO: Implement project edit */}}
+            onClick={() => {/* TODO: Implement novel edit */}}
           >
-            Edit Project
+            Edit Novel
           </Button>
         </Box>
         
         <Box sx={{ ml: 6, mt: 3 }}>
           <Typography variant="body1" paragraph>
-            {project.description || 'No description provided.'}
+            {novel.description || 'No description provided.'}
           </Typography>
           
           <Grid container spacing={3} sx={{ mt: 2 }}>
             <Grid item xs={12} sm={6}>
               <Typography variant="body2" color="text.secondary">
-                Created: {formatDate(project.createdAt)}
+                Created: {formatDate(novel.createdAt)}
               </Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography variant="body2" color="text.secondary">
-                Last Updated: {formatDate(project.updatedAt)}
+                Last Updated: {formatDate(novel.updatedAt)}
               </Typography>
             </Grid>
           </Grid>
         </Box>
       </Paper>
       
-      {/* Project Stats */}
+      {/* Novel Stats */}
       <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h5" gutterBottom>Project Statistics</Typography>
+        <Typography variant="h5" gutterBottom>Novel Statistics</Typography>
         
         <Grid container spacing={3}>
           <Grid item xs={12} sm={4}>
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="h4" color="primary">
-                {stats.bookCount || 0}
+                {(stats.totalWordCount || 0).toLocaleString()}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Books/Novels
+                Words Written
               </Typography>
             </Box>
           </Grid>
@@ -426,7 +424,7 @@ const ProjectDetail = () => {
                 {stats.chapterCount || 0}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Total Chapters
+                Chapters
               </Typography>
             </Box>
           </Grid>
@@ -447,45 +445,94 @@ const ProjectDetail = () => {
       {/* Tabs for Chapters and Codex */}
       <Paper sx={{ p: 3 }}>
         <Tabs value={tabValue} onChange={handleTabChange}>
-          <Tab label="Books/Novels" />
+          <Tab label="Chapters" />
           <Tab label="Codex" />
         </Tabs>
         
-        {/* Books/Novels Tab */}
+        {/* Chapters Tab */}
         <Box role="tabpanel" hidden={tabValue !== 0} sx={{ mt: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
             <Button
               variant="contained"
               startIcon={<AddIcon />}
               onClick={() => setNewChapterDialogOpen(true)}
-              data-testid="add-novel-button"
+              data-testid="add-chapter-button"
             >
-              New Book/Novel
+              New Chapter
             </Button>
           </Box>
           
-          <Paper 
-            variant="outlined" 
-            sx={{ 
-              p: 4, 
-              textAlign: 'center',
-              backgroundColor: 'background.default'
-            }}
-          >
-            <Typography variant="h6" color="text.secondary" gutterBottom>
-              No Books/Novels Yet
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              Create your first book or novel to organize your chapters and stories.
-            </Typography>
-            <Button
-              variant="outlined"
-              startIcon={<AddIcon />}
-              onClick={() => navigate('/novels')}
+          {chapters.length === 0 ? (
+            <Paper 
+              variant="outlined" 
+              sx={{ 
+                p: 4, 
+                textAlign: 'center',
+                backgroundColor: 'background.default'
+              }}
             >
-              Create First Book/Novel
-            </Button>
-          </Paper>
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No Chapters Yet
+              </Typography>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                Get started by creating your first chapter.
+              </Typography>
+              <Button
+                variant="outlined"
+                startIcon={<AddIcon />}
+                onClick={() => setNewChapterDialogOpen(true)}
+              >
+                Create First Chapter
+              </Button>
+            </Paper>
+          ) : (
+            <List>
+              {chapters.map((chapter, index) => (
+                <React.Fragment key={chapter._id}>
+                  <ListItem
+                    button
+                    onClick={() => handleOpenEditor(chapter._id)}
+                    sx={{ borderRadius: 1 }}
+                  >
+                    <ListItemText
+                      primary={
+                        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                          {chapter.orderIndex}. {chapter.title}
+                        </Typography>
+                      }
+                      secondary={
+                        <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                          <Typography variant="body2" component="span">
+                            {chapter.wordCount} words
+                          </Typography>
+                          {chapter.isComplete && (
+                            <Chip 
+                              icon={<CheckIcon />} 
+                              label="Complete" 
+                              size="small" 
+                              color="success" 
+                              variant="outlined"
+                              sx={{ ml: 1 }}
+                            />
+                          )}
+                        </Box>
+                      }
+                    />
+                    <ListItemSecondaryAction>
+                      <IconButton
+                        edge="end"
+                        onClick={(e) => handleChapterMenuOpen(e, chapter)}
+                        data-testid="chapter-menu-button"
+                      >
+                        <MoreHorizIcon />
+                      </IconButton>
+                    </ListItemSecondaryAction>
+                  </ListItem>
+                  {index < chapters.length - 1 && <Divider variant="inset" component="li" />}
+                </React.Fragment>
+              ))}
+            </List>
+          )}
         </Box>
         
         {/* Codex Tab */}
@@ -870,4 +917,4 @@ const ProjectDetail = () => {
   );
 };
 
-export default ProjectDetail;
+export default NovelDetail;

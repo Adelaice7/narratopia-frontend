@@ -7,9 +7,9 @@ import MyProjects from '../projects/MyProjects';
 const Dashboard = () => {
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth={false} sx={{ py: 4, px: 3 }}>
       {/* Header Section */}
-      <Box sx={{ mb: 4, textAlign: 'center' }}>
+      <Box sx={{ mb: 4, textAlign: 'center', maxWidth: 'lg', mx: 'auto' }}>
         <Typography variant="h4" component="h1" gutterBottom>
           Your projects
         </Typography>
@@ -19,11 +19,9 @@ const Dashboard = () => {
       </Box>
 
       {/* My Projects Section */}
-      <Grid container spacing={4} justifyContent="center">
-        <Grid item xs={12} lg={10}>
-          <MyProjects />
-        </Grid>
-      </Grid>
+      <Box sx={{ width: '100%' }}>
+        <MyProjects />
+      </Box>
     </Container>
   );
 };

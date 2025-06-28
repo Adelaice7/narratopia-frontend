@@ -16,6 +16,8 @@ import PrivateRoute from './components/auth/PrivateRoute';
 import Dashboard from './components/dashboard/Dashboard';
 import ProjectsList from './components/projects/ProjectsList';
 import ProjectDetail from './components/projects/ProjectDetail';
+import Novels from './components/novels/Novels';
+import NovelDetail from './components/novels/NovelDetail';
 import WritingInterface from './components/writing/WritingInterface';
 import CodexManager from './components/codex/CodexManager';
 import CodexEntityDetail from './components/codex/CodexEntityDetail';
@@ -128,6 +130,28 @@ function App() {
                     <PrivateRoute>
                       <MainLayout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
                         <ProjectDetail />
+                      </MainLayout>
+                    </PrivateRoute>
+                  }
+                />
+                
+                <Route
+                  path="/novels"
+                  element={
+                    <PrivateRoute>
+                      <MainLayout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
+                        <Novels />
+                      </MainLayout>
+                    </PrivateRoute>
+                  }
+                />
+                
+                <Route
+                  path="/novels/:novelId"
+                  element={
+                    <PrivateRoute>
+                      <MainLayout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
+                        <NovelDetail />
                       </MainLayout>
                     </PrivateRoute>
                   }

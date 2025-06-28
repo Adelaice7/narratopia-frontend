@@ -1,22 +1,22 @@
 import React from 'react';
 import ProjectsView from '../common/ProjectsView';
 
-const MyProjects = () => {
+const Novels = () => {
   const handleImportClick = () => {
     // TODO: Implement import functionality
-    console.log('Import clicked');
+    console.log('Import novel clicked');
   };
 
   return (
     <ProjectsView
-      title="Projects"
-      apiEndpoint="/api/projects"
+      title="Novels"
+      apiEndpoint="/api/novels"
       createButtonText="Create"
       importButtonText="Import"
       onImportClick={handleImportClick}
-      entityType="project"
+      entityType="novel"
     />
   );
 };
 
-export default MyProjects;
+export default Novels;
