@@ -9,15 +9,14 @@ import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
   MenuBook as MenuBookIcon,
-  Create as CreateIcon,
   AutoStories as AutoStoriesIcon,
+  CollectionsBookmark as CollectionsBookmarkIcon,
   Settings as SettingsIcon,
   Help as HelpIcon,
   ExitToApp as ExitToAppIcon,
   ChevronLeft as ChevronLeftIcon,
   Brightness4 as Brightness4Icon,
-  Brightness7 as Brightness7Icon,
-  Add as AddIcon
+  Brightness7 as Brightness7Icon
 } from '@mui/icons-material';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -31,7 +30,6 @@ const AppNavigation = ({ darkMode, toggleDarkMode }) => {
   
   const [drawerOpen, setDrawerOpen] = useState(!isMobile);
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
-  const [createMenuAnchor, setCreateMenuAnchor] = useState(null);
   
   // Handle drawer toggle
   const handleDrawerToggle = () => {
@@ -48,21 +46,6 @@ const AppNavigation = ({ darkMode, toggleDarkMode }) => {
     setUserMenuAnchor(null);
   };
   
-  // Handle create menu open
-  const handleCreateMenuOpen = (event) => {
-    setCreateMenuAnchor(event.currentTarget);
-  };
-  
-  // Handle create menu close
-  const handleCreateMenuClose = () => {
-    setCreateMenuAnchor(null);
-  };
-  
-  // Handle create new item
-  const handleCreateNew = (type) => {
-    handleCreateMenuClose();
-    navigate(`/create/${type}`);
-  };
   
   // Handle logout
   const handleLogout = () => {
@@ -90,16 +73,16 @@ const AppNavigation = ({ darkMode, toggleDarkMode }) => {
       active: isActive('/projects')
     },
     { 
-      text: 'Editor', 
-      icon: <CreateIcon />, 
-      path: '/editor',
-      active: isActive('/editor') 
+      text: 'Novels', 
+      icon: <AutoStoriesIcon />, 
+      path: '/novels',
+      active: isActive('/novels')
     },
     { 
-      text: 'Library', 
-      icon: <AutoStoriesIcon />, 
-      path: '/library',
-      active: isActive('/library')
+      text: 'Series', 
+      icon: <CollectionsBookmarkIcon />, 
+      path: '/series',
+      active: isActive('/series')
     }
   ];
   
@@ -125,25 +108,26 @@ const AppNavigation = ({ darkMode, toggleDarkMode }) => {
   
   const drawer = (
     <Box sx={{ width: 240, height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between',
-        p: 2
-      }}>
-        <Typography variant="h6" component="div">
-          Narratopia
-        </Typography>
-        {isMobile && (
-          <IconButton onClick={handleDrawerToggle}>
-            <ChevronLeftIcon />
-          </IconButton>
-        )}
-      </Box>
+      {isMobile && (
+        <>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            p: 2
+          }}>
+            <Typography variant="h6" component="div">
+              Narratopia
+            </Typography>
+            <IconButton onClick={handleDrawerToggle}>
+              <ChevronLeftIcon />
+            </IconButton>
+          </Box>
+          <Divider />
+        </>
+      )}
       
-      <Divider />
-      
-      <List sx={{ flexGrow: 1 }}>
+      <List sx={{ flexGrow: 1, pt: isMobile ? 0 : 2 }}>
         {mainMenuItems.map((item) => (
           <ListItem 
             button 
@@ -211,38 +195,64 @@ const AppNavigation = ({ darkMode, toggleDarkMode }) => {
             <MenuIcon />
           </IconButton>
           
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            {isMobile ? 'Narratopia' : ''}
+          {/* Logo */}
+          <Typography 
+            variant="h6" 
+            component={Link} 
+            to="/dashboard"
+            sx={{ 
+              textDecoration: 'none', 
+              color: 'inherit',
+              mr: 4,
+              fontWeight: 'bold'
+            }}
+          >
+            Narratopia
           </Typography>
           
+          {/* Horizontal Menu - Hidden on mobile */}
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', flexGrow: 1 }}>
+            <Button 
+              color="inherit" 
+              component={Link} 
+              to="/projects"
+              sx={{ mx: 1, color: isActive('/projects') ? 'primary.light' : 'inherit' }}
+            >
+              Projects
+            </Button>
+            <Button 
+              color="inherit" 
+              component={Link} 
+              to="/novels"
+              sx={{ mx: 1, color: isActive('/novels') ? 'primary.light' : 'inherit' }}
+            >
+              Novels
+            </Button>
+            <Button 
+              color="inherit" 
+              component={Link} 
+              to="/series"
+              sx={{ mx: 1, color: isActive('/series') ? 'primary.light' : 'inherit' }}
+            >
+              Series
+            </Button>
+            <Button 
+              color="inherit" 
+              component={Link} 
+              to="/help"
+              sx={{ mx: 1, color: isActive('/help') ? 'primary.light' : 'inherit' }}
+            >
+              Help
+            </Button>
+          </Box>
+          
+          {/* Right side icons */}
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Tooltip title={darkMode ? 'Light Mode' : 'Dark Mode'}>
               <IconButton color="inherit" onClick={toggleDarkMode}>
                 {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
               </IconButton>
             </Tooltip>
-            
-            <Button
-              color="inherit"
-              startIcon={<AddIcon />}
-              onClick={handleCreateMenuOpen}
-              sx={{ mx: 1 }}
-            >
-              Create
-            </Button>
-            
-            <Menu
-              anchorEl={createMenuAnchor}
-              open={Boolean(createMenuAnchor)}
-              onClose={handleCreateMenuClose}
-            >
-              <MenuItem onClick={() => handleCreateNew('project')}>New Project</MenuItem>
-              <MenuItem onClick={() => handleCreateNew('character')}>New Character</MenuItem>
-              <MenuItem onClick={() => handleCreateNew('location')}>New Location</MenuItem>
-              <MenuItem onClick={() => handleCreateNew('item')}>New Item</MenuItem>
-              <MenuItem onClick={() => handleCreateNew('event')}>New Event</MenuItem>
-              <MenuItem onClick={() => handleCreateNew('concept')}>New Concept</MenuItem>
-            </Menu>
             
             <IconButton
               onClick={handleUserMenuOpen}

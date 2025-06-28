@@ -172,12 +172,13 @@ const Dashboard = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Header Section */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          Welcome back, {currentUser?.username || 'Writer'}
+          Your projects
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          {new Date().toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          Continue your writing journey with your existing projects or start something new
         </Typography>
       </Box>
 
@@ -187,95 +188,42 @@ const Dashboard = () => {
         </Box>
       ) : (
         <Grid container spacing={4}>
-          {/* Stats Overview */}
+          {/* Recent Projects - Main Content Block */}
           <Grid item xs={12}>
             <Paper sx={{ p: 3, borderRadius: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Writing Overview
-              </Typography>
-              
-              <Grid container spacing={3} sx={{ mt: 1 }}>
-                <Grid item xs={6} sm={3}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h4" color="primary">
-                      {stats.totalProjects}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Projects
-                    </Typography>
-                  </Box>
-                </Grid>
-                
-                <Grid item xs={6} sm={3}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h4" color="primary">
-                      {(stats.totalWordCount || 0).toLocaleString()}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Words Written
-                    </Typography>
-                  </Box>
-                </Grid>
-                
-                <Grid item xs={6} sm={3}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h4" color="primary">
-                      {stats.totalWritingSessions}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Writing Sessions
-                    </Typography>
-                  </Box>
-                </Grid>
-                
-                <Grid item xs={6} sm={3}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h4" color="primary">
-                      {stats.averageWordsPerDay}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Avg. Words/Day
-                    </Typography>
-                  </Box>
-                </Grid>
-              </Grid>
-            </Paper>
-          </Grid>
-
-          {/* Recent Projects */}
-          <Grid item xs={12} md={8}>
-            <Paper sx={{ p: 3, borderRadius: 2, height: '100%' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6">
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography variant="h5">
                   Recent Projects
                 </Typography>
                 
                 <Button 
-                  variant="outlined" 
-                  size="small"
+                  variant="contained" 
                   onClick={() => navigate('/projects')}
                 >
-                  View All
+                  View All Projects
                 </Button>
               </Box>
               
               {recentProjects.length === 0 ? (
-                <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <Typography variant="body1" color="text.secondary" gutterBottom>
+                <Box sx={{ textAlign: 'center', py: 8 }}>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
                     You don't have any projects yet
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" gutterBottom sx={{ mb: 3 }}>
+                    Start your first writing project and bring your stories to life
                   </Typography>
                   
                   <Button
                     variant="contained"
+                    size="large"
                     startIcon={<MenuBookIcon />}
                     onClick={handleCreateProject}
-                    sx={{ mt: 2 }}
                   >
                     Create Your First Project
                   </Button>
                 </Box>
               ) : (
-                <Grid container spacing={2}>
+                <Grid container spacing={3}>
                   {recentProjects.map(project => (
                     <Grid item xs={12} sm={6} md={4} key={project._id}>
                       <Card 
@@ -305,7 +253,21 @@ const Dashboard = () => {
                               />
                             )}
                             
-                            <Box sx={{ mt: 2 }}>
+                            <Typography 
+                              variant="body2" 
+                              color="text.secondary" 
+                              sx={{ 
+                                mb: 2, 
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden'
+                              }}
+                            >
+                              {project.description || 'No description available'}
+                            </Typography>
+                            
+                            <Box sx={{ mt: 'auto' }}>
                               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                                 <Typography variant="body2" color="text.secondary">
                                   Progress:
@@ -319,11 +281,11 @@ const Dashboard = () => {
                                 value={Math.floor(Math.random() * 100)} 
                                 sx={{ height: 6, borderRadius: 3 }}
                               />
+                              
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                                Last opened: {new Date(project.lastOpenedAt).toLocaleDateString()}
+                              </Typography>
                             </Box>
-                            
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                              Last opened: {new Date(project.lastOpenedAt).toLocaleDateString()}
-                            </Typography>
                           </CardContent>
                         </CardActionArea>
                       </Card>
@@ -331,77 +293,6 @@ const Dashboard = () => {
                   ))}
                 </Grid>
               )}
-            </Paper>
-          </Grid>
-
-          {/* Recent Activity */}
-          <Grid item xs={12} md={4}>
-            <Paper sx={{ p: 3, borderRadius: 2, height: '100%' }}>
-              <Typography variant="h6" gutterBottom>
-                Recent Activity
-              </Typography>
-              
-              <List sx={{ width: '100%' }}>
-                {recentActivityData.map((activity) => (
-                  <React.Fragment key={activity.id}>
-                    <ListItem alignItems="flex-start" sx={{ px: 0 }}>
-                      <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: activity.type === 'writing' ? 'primary.main' : 'secondary.main' }}>
-                          {getActivityIcon(activity)}
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={activity.project.title}
-                        secondary={
-                          <React.Fragment>
-                            <Typography
-                              component="span"
-                              variant="body2"
-                              color="text.primary"
-                              sx={{ display: 'block' }}
-                            >
-                              {activity.details}
-                            </Typography>
-                            <Typography
-                              component="span"
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {formatDate(activity.date)}
-                            </Typography>
-                          </React.Fragment>
-                        }
-                      />
-                    </ListItem>
-                    <Divider variant="inset" component="li" />
-                  </React.Fragment>
-                ))}
-              </List>
-            </Paper>
-          </Grid>
-
-          {/* Weekly Writing Stats */}
-          <Grid item xs={12}>
-            <Paper sx={{ p: 3, borderRadius: 2 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6">
-                  Weekly Writing Stats
-                </Typography>
-                
-                <Button 
-                  startIcon={<BarChartIcon />}
-                  variant="text"
-                  size="small"
-                >
-                  Full Stats
-                </Button>
-              </Box>
-              
-              <Box sx={{ p: 2, textAlign: 'center' }}>
-                <Typography variant="body1" color="text.secondary">
-                  Statistics will appear as you write
-                </Typography>
-              </Box>
             </Paper>
           </Grid>
         </Grid>

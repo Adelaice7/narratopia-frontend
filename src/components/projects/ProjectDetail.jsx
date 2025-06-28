@@ -75,11 +75,9 @@ const ProjectDetail = () => {
   const fetchProjectData = useCallback(async () => {
     // Don't fetch if we're currently deleting
     if (isDeletingRef.current) {
-      console.log('Skipping fetch during deletion');
       return;
     }
     
-    console.log('Fetching project data for project:', projectId);
     setLoading(true);
     try {
       // Fetch project details
@@ -181,31 +179,19 @@ const ProjectDetail = () => {
   
   // Delete chapter
   const handleDeleteChapter = async () => {
-    console.log('=== handleDeleteChapter CALLED ===');
-    console.log('selectedChapter:', selectedChapter);
-    
     if (!selectedChapter) {
-      console.log('ERROR: No chapter selected for deletion');
       setAlert('No chapter selected for deletion', 'error');
       return;
     }
 
-    console.log('Setting deletion flag to true');
     // Set flag to prevent re-fetching
     isDeletingRef.current = true;
 
     try {
-      console.log('Attempting to delete chapter:', selectedChapter._id);
-      console.log('DELETE request URL:', `/api/chapters/${selectedChapter._id}`);
+      console.log('Deleting chapter:', selectedChapter.title);
       
-      // Make the DELETE request with explicit config
-      const response = await api.delete(`/api/chapters/${selectedChapter._id}`, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      console.log('Delete response status:', response.status);
-      console.log('Delete response data:', response.data);
+      // Make the DELETE request
+      const response = await api.delete(`/api/chapters/${selectedChapter._id}`);
       
       // Only update UI if the deletion was successful
       if (response.data.success) {
@@ -737,10 +723,7 @@ const ProjectDetail = () => {
             Cancel
           </Button>
           <Button 
-            onClick={() => {
-              console.log('DELETE BUTTON CLICKED');
-              handleDeleteChapter();
-            }} 
+            onClick={handleDeleteChapter} 
             color="error" 
             data-testid="confirm-delete-chapter-button"
           >
