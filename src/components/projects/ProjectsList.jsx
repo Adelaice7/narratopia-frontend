@@ -219,6 +219,7 @@ const ProjectsList = () => {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setCreateDialogOpen(true)}
+            data-testid="new-project-button"
           >
             New Project
           </Button>

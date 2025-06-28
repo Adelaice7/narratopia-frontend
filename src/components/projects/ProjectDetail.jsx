@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Container, Box, Paper, Typography, Button, Grid, 
   LinearProgress, Divider, List, ListItem, ListItemText, 
@@ -68,36 +68,46 @@ const ProjectDetail = () => {
   const [newEntityType, setNewEntityType] = useState('');
   const [codexMenuAnchor, setCodexMenuAnchor] = useState(null);
   
+  // Ref to prevent re-fetching during deletion
+  const isDeletingRef = useRef(false);
+  
   // Load project data
-  useEffect(() => {
-    const fetchProjectData = async () => {
-      setLoading(true);
-      try {
-        // Fetch project details
-        const projectRes = await api.get(`/api/projects/${projectId}`);
-        setProject(projectRes.data.data);
-        
-        // Fetch project stats
-        const statsRes = await api.get(`/api/projects/${projectId}/stats`);
-        setStats(statsRes.data.data);
-        
-        // Fetch chapters
-        const chaptersRes = await api.get(`/api/projects/${projectId}/chapters`);
-        setChapters(chaptersRes.data.data);
-        
-        // Fetch codex entities
-        const codexRes = await api.get(`/api/projects/${projectId}/codex`);
-        setCodexEntities(codexRes.data.data);
-      } catch (error) {
-        console.error('Error fetching project data:', error);
-        setAlert('Failed to load project data', 'error');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchProjectData = useCallback(async () => {
+    // Don't fetch if we're currently deleting
+    if (isDeletingRef.current) {
+      console.log('Skipping fetch during deletion');
+      return;
+    }
     
-    fetchProjectData();
+    console.log('Fetching project data for project:', projectId);
+    setLoading(true);
+    try {
+      // Fetch project details
+      const projectRes = await api.get(`/api/projects/${projectId}`);
+      setProject(projectRes.data.data);
+      
+      // Fetch project stats
+      const statsRes = await api.get(`/api/projects/${projectId}/stats`);
+      setStats(statsRes.data.data);
+      
+      // Fetch chapters
+      const chaptersRes = await api.get(`/api/projects/${projectId}/chapters`);
+      setChapters(chaptersRes.data.data);
+      
+      // Fetch codex entities
+      const codexRes = await api.get(`/api/projects/${projectId}/codex`);
+      setCodexEntities(codexRes.data.data);
+    } catch (error) {
+      console.error('Error fetching project data:', error);
+      setAlert('Failed to load project data', 'error');
+    } finally {
+      setLoading(false);
+    }
   }, [projectId, setAlert]);
+
+  useEffect(() => {
+    fetchProjectData();
+  }, [fetchProjectData]);
   
   // Handle tab change
   const handleTabChange = (event, newValue) => {
@@ -171,26 +181,59 @@ const ProjectDetail = () => {
   
   // Delete chapter
   const handleDeleteChapter = async () => {
+    console.log('=== handleDeleteChapter CALLED ===');
+    console.log('selectedChapter:', selectedChapter);
+    
+    if (!selectedChapter) {
+      console.log('ERROR: No chapter selected for deletion');
+      setAlert('No chapter selected for deletion', 'error');
+      return;
+    }
+
+    console.log('Setting deletion flag to true');
+    // Set flag to prevent re-fetching
+    isDeletingRef.current = true;
+
     try {
-      await api.delete(`/api/chapters/${selectedChapter._id}`);
+      console.log('Attempting to delete chapter:', selectedChapter._id);
+      console.log('DELETE request URL:', `/api/chapters/${selectedChapter._id}`);
       
-      // Update chapters list
-      const updatedChapters = chapters.filter(
-        chapter => chapter._id !== selectedChapter._id
-      );
-      
-      setChapters(updatedChapters);
-      setDeleteChapterDialogOpen(false);
-      setAlert('Chapter deleted successfully', 'success');
-      
-      // Also update stats
-      setStats({
-        ...stats,
-        chapterCount: stats.chapterCount - 1
+      // Make the DELETE request with explicit config
+      const response = await api.delete(`/api/chapters/${selectedChapter._id}`, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
+      console.log('Delete response status:', response.status);
+      console.log('Delete response data:', response.data);
+      
+      // Only update UI if the deletion was successful
+      if (response.data.success) {
+        // Update chapters list locally
+        const updatedChapters = chapters.filter(
+          chapter => chapter._id !== selectedChapter._id
+        );
+        
+        setChapters(updatedChapters);
+        setDeleteChapterDialogOpen(false);
+        setSelectedChapter(null); // Clear selected chapter
+        setAlert('Chapter deleted successfully', 'success');
+        
+        // Update stats
+        setStats({
+          ...stats,
+          chapterCount: Math.max(0, stats.chapterCount - 1)
+        });
+      } else {
+        throw new Error(response.data.message || 'Deletion failed');
+      }
     } catch (error) {
       console.error('Error deleting chapter:', error);
-      setAlert('Failed to delete chapter', 'error');
+      setAlert(`Failed to delete chapter: ${error.response?.data?.message || error.message}`, 'error');
+      setDeleteChapterDialogOpen(false);
+    } finally {
+      // Reset flag after deletion attempt
+      isDeletingRef.current = false;
     }
   };
   
@@ -344,7 +387,7 @@ const ProjectDetail = () => {
           <Grid item xs={6} sm={3}>
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="h4" color="primary">
-                {stats.totalWordCount.toLocaleString()}
+                {(stats.totalWordCount || 0).toLocaleString()}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Words Written
@@ -388,7 +431,7 @@ const ProjectDetail = () => {
         
         <Box sx={{ mt: 3 }}>
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            Progress towards goal ({stats.wordCountGoal.toLocaleString()} words)
+            Progress towards goal ({(stats.wordCountGoal || 0).toLocaleString()} words)
           </Typography>
           <LinearProgress 
             variant="determinate" 
@@ -412,6 +455,7 @@ const ProjectDetail = () => {
               variant="contained"
               startIcon={<AddIcon />}
               onClick={() => setNewChapterDialogOpen(true)}
+              data-testid="add-chapter-button"
             >
               New Chapter
             </Button>
@@ -477,6 +521,7 @@ const ProjectDetail = () => {
                       <IconButton
                         edge="end"
                         onClick={(e) => handleChapterMenuOpen(e, chapter)}
+                        data-testid="chapter-menu-button"
                       >
                         <MoreVertIcon />
                       </IconButton>
@@ -669,7 +714,11 @@ const ProjectDetail = () => {
       {/* Delete Chapter Dialog */}
       <Dialog
         open={deleteChapterDialogOpen}
-        onClose={() => setDeleteChapterDialogOpen(false)}
+        onClose={() => {
+          setDeleteChapterDialogOpen(false);
+          setSelectedChapter(null); // Clear selection when dialog closes
+        }}
+        data-testid="delete-chapter-dialog"
       >
         <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>
@@ -681,10 +730,20 @@ const ProjectDetail = () => {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteChapterDialogOpen(false)}>
+          <Button onClick={() => {
+            setDeleteChapterDialogOpen(false);
+            setSelectedChapter(null);
+          }} data-testid="cancel-delete-chapter-button">
             Cancel
           </Button>
-          <Button onClick={handleDeleteChapter} color="error">
+          <Button 
+            onClick={() => {
+              console.log('DELETE BUTTON CLICKED');
+              handleDeleteChapter();
+            }} 
+            color="error" 
+            data-testid="confirm-delete-chapter-button"
+          >
             Delete
           </Button>
         </DialogActions>
@@ -763,8 +822,9 @@ const ProjectDetail = () => {
         <MenuItem 
           onClick={() => {
             setDeleteChapterDialogOpen(true);
-            handleChapterMenuClose();
+            setChapterMenuAnchor(null); // Close menu but keep selectedChapter
           }}
+          data-testid="delete-chapter-menu-item"
         >
           <ListItemIcon>
             <DeleteIcon fontSize="small" />

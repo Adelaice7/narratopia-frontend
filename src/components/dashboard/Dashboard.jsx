@@ -209,7 +209,7 @@ const Dashboard = () => {
                 <Grid item xs={6} sm={3}>
                   <Box sx={{ textAlign: 'center' }}>
                     <Typography variant="h4" color="primary">
-                      {stats.totalWordCount.toLocaleString()}
+                      {(stats.totalWordCount || 0).toLocaleString()}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Words Written
