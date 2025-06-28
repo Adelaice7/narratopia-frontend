@@ -61,16 +61,10 @@ const AppNavigation = ({ darkMode, toggleDarkMode }) => {
   
   const mainMenuItems = [
     { 
-      text: 'Dashboard', 
-      icon: <DashboardIcon />, 
-      path: '/dashboard',
-      active: isActive('/dashboard')
-    },
-    { 
       text: 'Projects', 
       icon: <MenuBookIcon />, 
-      path: '/projects',
-      active: isActive('/projects')
+      path: '/dashboard',
+      active: isActive('/dashboard') || isActive('/projects')
     },
     { 
       text: 'Novels', 
@@ -107,7 +101,13 @@ const AppNavigation = ({ darkMode, toggleDarkMode }) => {
   const userInitials = userName.substring(0, 2).toUpperCase();
   
   const drawer = (
-    <Box sx={{ width: 240, height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ 
+      width: 240, 
+      height: '100%', 
+      display: 'flex', 
+      flexDirection: 'column',
+      overflow: 'hidden' // Prevent horizontal scrollbar
+    }}>
       {isMobile && (
         <>
           <Box sx={{ 
@@ -173,12 +173,6 @@ const AppNavigation = ({ darkMode, toggleDarkMode }) => {
           </ListItem>
         ))}
       </List>
-      
-      <Box sx={{ p: 2, mt: 'auto' }}>
-        <Typography variant="body2" color="text.secondary" align="center">
-          Narratopia v1.0.0
-        </Typography>
-      </Box>
     </Box>
   );
   
@@ -215,8 +209,9 @@ const AppNavigation = ({ darkMode, toggleDarkMode }) => {
             <Button 
               color="inherit" 
               component={Link} 
-              to="/projects"
-              sx={{ mx: 1, color: isActive('/projects') ? 'primary.light' : 'inherit' }}
+              to="/dashboard"
+              startIcon={<MenuBookIcon />}
+              sx={{ mx: 1, color: (isActive('/dashboard') || isActive('/projects')) ? 'primary.light' : 'inherit' }}
             >
               Projects
             </Button>
@@ -224,6 +219,7 @@ const AppNavigation = ({ darkMode, toggleDarkMode }) => {
               color="inherit" 
               component={Link} 
               to="/novels"
+              startIcon={<AutoStoriesIcon />}
               sx={{ mx: 1, color: isActive('/novels') ? 'primary.light' : 'inherit' }}
             >
               Novels
@@ -232,17 +228,10 @@ const AppNavigation = ({ darkMode, toggleDarkMode }) => {
               color="inherit" 
               component={Link} 
               to="/series"
+              startIcon={<CollectionsBookmarkIcon />}
               sx={{ mx: 1, color: isActive('/series') ? 'primary.light' : 'inherit' }}
             >
               Series
-            </Button>
-            <Button 
-              color="inherit" 
-              component={Link} 
-              to="/help"
-              sx={{ mx: 1, color: isActive('/help') ? 'primary.light' : 'inherit' }}
-            >
-              Help
             </Button>
           </Box>
           
@@ -251,6 +240,12 @@ const AppNavigation = ({ darkMode, toggleDarkMode }) => {
             <Tooltip title={darkMode ? 'Light Mode' : 'Dark Mode'}>
               <IconButton color="inherit" onClick={toggleDarkMode}>
                 {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+              </IconButton>
+            </Tooltip>
+            
+            <Tooltip title="Help">
+              <IconButton color="inherit" component={Link} to="/help">
+                <HelpIcon />
               </IconButton>
             </Tooltip>
             
@@ -300,6 +295,8 @@ const AppNavigation = ({ darkMode, toggleDarkMode }) => {
             boxSizing: 'border-box',
             top: '64px', // Added to fix positioning with AppBar
             height: 'calc(100% - 64px)', // Changed to account for AppBar height
+            overflowX: 'hidden', // Prevent horizontal scrollbar
+            overflowY: 'auto', // Allow vertical scrolling if needed
           },
         }}
       >

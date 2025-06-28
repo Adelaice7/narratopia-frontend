@@ -5,7 +5,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 
 // Layout Components
-import AppNavigation from './components/layout/AppNavigation';
+import MainLayout from './components/layout/MainLayout';
 
 // Auth Components
 import Login from './components/auth/Login';
@@ -99,19 +99,9 @@ function App() {
                   path="/"
                   element={
                     <PrivateRoute>
-                      <Box sx={{ display: 'flex' }}>
-                        <AppNavigation darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-                        <Box 
-                          component="main" 
-                          sx={{ 
-                            flexGrow: 1, 
-                            mt: '64px', // Add top margin to account for AppBar height
-                            width: { sm: `calc(100% - 240px)` } 
-                          }}
-                        >
-                          <Dashboard />
-                        </Box>
-                      </Box>
+                      <MainLayout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
+                        <Dashboard />
+                      </MainLayout>
                     </PrivateRoute>
                   }
                 />
@@ -120,61 +110,25 @@ function App() {
                   path="/dashboard"
                   element={
                     <PrivateRoute>
-                      <Box sx={{ display: 'flex' }}>
-                        <AppNavigation darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-                        <Box 
-                          component="main" 
-                          sx={{ 
-                            flexGrow: 1, 
-                            mt: '64px', // Add top margin to account for AppBar height
-                            width: { sm: `calc(100% - 240px)` } 
-                          }}
-                        >
-                          <Dashboard />
-                        </Box>
-                      </Box>
+                      <MainLayout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
+                        <Dashboard />
+                      </MainLayout>
                     </PrivateRoute>
                   }
                 />
                 
                 <Route
                   path="/projects"
-                  element={
-                    <PrivateRoute>
-                      <Box sx={{ display: 'flex' }}>
-                        <AppNavigation darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-                        <Box 
-                          component="main" 
-                          sx={{ 
-                            flexGrow: 1, 
-                            mt: '64px', // Add top margin to account for AppBar height
-                            width: { sm: `calc(100% - 240px)` } 
-                          }}
-                        >
-                          <ProjectsList />
-                        </Box>
-                      </Box>
-                    </PrivateRoute>
-                  }
+                  element={<Navigate to="/dashboard" replace />}
                 />
                 
                 <Route
                   path="/projects/:projectId"
                   element={
                     <PrivateRoute>
-                      <Box sx={{ display: 'flex' }}>
-                        <AppNavigation darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-                        <Box 
-                          component="main" 
-                          sx={{ 
-                            flexGrow: 1, 
-                            mt: '64px', // Add top margin to account for AppBar height
-                            width: { sm: `calc(100% - 240px)` } 
-                          }}
-                        >
-                          <ProjectDetail />
-                        </Box>
-                      </Box>
+                      <MainLayout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
+                        <ProjectDetail />
+                      </MainLayout>
                     </PrivateRoute>
                   }
                 />
@@ -183,19 +137,9 @@ function App() {
                   path="/editor/:projectId/:chapterId"
                   element={
                     <PrivateRoute>
-                      <Box sx={{ display: 'flex' }}>
-                        <AppNavigation darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-                        <Box 
-                          component="main" 
-                          sx={{ 
-                            flexGrow: 1, 
-                            mt: '64px', // Add top margin to account for AppBar height
-                            width: { sm: `calc(100% - 240px)` } 
-                          }}
-                        >
-                          <WritingInterface />
-                        </Box>
-                      </Box>
+                      <MainLayout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
+                        <WritingInterface />
+                      </MainLayout>
                     </PrivateRoute>
                   }
                 />
@@ -204,19 +148,9 @@ function App() {
                   path="/codex/:projectId"
                   element={
                     <PrivateRoute>
-                      <Box sx={{ display: 'flex' }}>
-                        <AppNavigation darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-                        <Box 
-                          component="main" 
-                          sx={{ 
-                            flexGrow: 1, 
-                            mt: '64px', // Add top margin to account for AppBar height
-                            width: { sm: `calc(100% - 240px)` } 
-                          }}
-                        >
-                          <CodexManager />
-                        </Box>
-                      </Box>
+                      <MainLayout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
+                        <CodexManager />
+                      </MainLayout>
                     </PrivateRoute>
                   }
                 />
@@ -225,19 +159,9 @@ function App() {
                   path="/codex/:projectId/entity/:entityId"
                   element={
                     <PrivateRoute>
-                      <Box sx={{ display: 'flex' }}>
-                        <AppNavigation darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-                        <Box 
-                          component="main" 
-                          sx={{ 
-                            flexGrow: 1, 
-                            mt: '64px', // Add top margin to account for AppBar height
-                            width: { sm: `calc(100% - 240px)` } 
-                          }}
-                        >
-                          <CodexEntityDetail />
-                        </Box>
-                      </Box>
+                      <MainLayout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
+                        <CodexEntityDetail />
+                      </MainLayout>
                     </PrivateRoute>
                   }
                 />
@@ -246,19 +170,9 @@ function App() {
                   path="/codex/:projectId/relationships"
                   element={
                     <PrivateRoute>
-                      <Box sx={{ display: 'flex' }}>
-                        <AppNavigation darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-                        <Box 
-                          component="main" 
-                          sx={{ 
-                            flexGrow: 1, 
-                            mt: '64px', // Add top margin to account for AppBar height
-                            width: { sm: `calc(100% - 240px)` } 
-                          }}
-                        >
-                          <CodexRelationships />
-                        </Box>
-                      </Box>
+                      <MainLayout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
+                        <CodexRelationships />
+                      </MainLayout>
                     </PrivateRoute>
                   }
                 />
@@ -267,19 +181,9 @@ function App() {
                   path="/settings"
                   element={
                     <PrivateRoute>
-                      <Box sx={{ display: 'flex' }}>
-                        <AppNavigation darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-                        <Box 
-                          component="main" 
-                          sx={{ 
-                            flexGrow: 1, 
-                            mt: '64px', // Add top margin to account for AppBar height
-                            width: { sm: `calc(100% - 240px)` } 
-                          }}
-                        >
-                          <Settings />
-                        </Box>
-                      </Box>
+                      <MainLayout darkMode={darkMode} toggleDarkMode={toggleDarkMode}>
+                        <Settings />
+                      </MainLayout>
                     </PrivateRoute>
                   }
                 />
